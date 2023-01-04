@@ -1,0 +1,51 @@
+services:
+  revproxy:
+    image: linuxserver/swag
+    restart: always
+    environment:
+      - PUID: 1000
+      - PGID: 1000
+      - TZ: America/LosAngeles
+      - URL: digitaldelirium.tech
+      - VALIDATION: dns
+      - SUBDOMAIN: wildcard
+      - DNSPLUGIN: cloudflare
+      - STAGING: false
+  wordpress:
+    image: wordpress:latest
+    restart: always
+    depends_on:
+      - db
+      - revproxy
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/wordpresspasswd
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      wordpress_data: /var/www/html
+
+  db: 
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysqlrootpasswd
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD_FILE: /run/secrets/wordpresspasswd
+    volumes:
+      mysql_data: /var/lib/mysql
+    ports:
+      - 33061:3306
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: db
+      PMA_CONTROLUSER: root
+      PMA_CONTROLPASSWORD: /run/secrets/mysqlrootpasswd
+
+volumes:
+  wordpress_data:
+  mysql_data:
+  phpmyadmin_data:
